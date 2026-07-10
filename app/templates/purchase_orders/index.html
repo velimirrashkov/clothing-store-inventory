@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+  <h2 style="margin:0;">{{ t("po.heading") }}</h2>
+  <a class="button" href="/purchase-orders/new">{{ t("po.new") }}</a>
+</div>
+
+<form class="filters" method="get" action="/purchase-orders">
+  <label>{{ t("po.search_supplier") }}
+    <input type="text" name="q" value="{{ q }}" placeholder="{{ t('po.search_supplier_placeholder') }}">
+  </label>
+</form>
+
+<div class="panel">
+  {% if orders %}
+  <table>
+    <thead>
+      <tr><th>{{ t("po.col_number") }}</th><th>{{ t("po.col_supplier") }}</th><th>{{ t("common.status") }}</th><th>{{ t("common.created") }}</th><th>{{ t("common.total_cost") }}</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for po in orders %}
+      <tr>
+        <td>{{ po.id }}</td>
+        <td><a href="/suppliers/{{ po.supplier.id }}">{{ po.supplier.name }}</a></td>
+        <td>{{ t("po_status." + po.status) }}</td>
+        <td>{{ po.created_at.strftime("%Y-%m-%d") }}</td>
+        <td>${{ "%.2f"|format(po.total_cost) }}</td>
+        <td><a href="/purchase-orders/{{ po.id }}">{{ t("common.view") }}</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">{{ t("po.empty") }} <a href="/purchase-orders/new">{{ t("po.create_first") }}</a>.</p>
+  {% endif %}
+</div>
+
+{% endblock %}

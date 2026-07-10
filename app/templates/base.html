@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ t("brand.name") }}{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <h1><a href="/" class="brand">{{ t("brand.name") }}</a></h1>
+    {% include "_nav.html" %}
+    <div class="lang-switch">
+      <a href="/lang/bg" class="{{ 'active' if lang == 'bg' else '' }}">BG</a>
+      <a href="/lang/en" class="{{ 'active' if lang == 'en' else '' }}">EN</a>
+    </div>
+    {% if current_user %}
+    <div class="user-menu">
+      <span class="muted">{{ current_user.username }}</span>
+      <form method="post" action="/logout">
+        <button class="button secondary" type="submit">{{ t("auth.logout") }}</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="panel">
+  <h2>{% if supplier %}{{ t("supplier_form.edit_title") }}{% else %}{{ t("supplier_form.new_title") }}{% endif %}</h2>
+
+  <form method="post" action="{% if supplier %}/suppliers/{{ supplier.id }}/edit{% else %}/suppliers/new{% endif %}">
+    <div class="row">
+      <div class="field">
+        <label for="name">{{ t("common.name") }}</label>
+        <input type="text" id="name" name="name" required value="{{ supplier.name if supplier else '' }}">
+      </div>
+      <div class="field">
+        <label for="contact_name">{{ t("supplier_form.contact_name") }}</label>
+        <input type="text" id="contact_name" name="contact_name" value="{{ supplier.contact_name if supplier else '' }}">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="phone">{{ t("supplier_form.phone") }}</label>
+        <input type="text" id="phone" name="phone" value="{{ supplier.phone if supplier else '' }}">
+      </div>
+      <div class="field">
+        <label for="email">{{ t("supplier_form.email") }}</label>
+        <input type="email" id="email" name="email" value="{{ supplier.email if supplier else '' }}">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="address">{{ t("supplier_form.address") }}</label>
+      <input type="text" id="address" name="address" value="{{ supplier.address if supplier else '' }}">
+    </div>
+
+    <div class="field">
+      <label for="notes">{{ t("common.notes") }}</label>
+      <textarea id="notes" name="notes" rows="3">{{ supplier.notes if supplier else '' }}</textarea>
+    </div>
+
+    <div class="actions">
+      <button class="button" type="submit">{% if supplier %}{{ t("common.save") }}{% else %}{{ t("supplier_form.create") }}{% endif %}</button>
+      <a class="button secondary" href="{% if supplier %}/suppliers/{{ supplier.id }}{% else %}/suppliers{% endif %}">{{ t("common.cancel") }}</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="panel">
+  <form method="get" action="/reports" class="row" style="align-items:end;">
+    <div class="field">
+      <label for="range">{{ t("reports.date_range") }}</label>
+      <select id="range" name="range" onchange="this.form.submit()">
+        <option value="today" {% if range == "today" %}selected{% endif %}>{{ t("reports.today") }}</option>
+        <option value="7d" {% if range == "7d" %}selected{% endif %}>{{ t("reports.last_7") }}</option>
+        <option value="30d" {% if range == "30d" %}selected{% endif %}>{{ t("reports.last_30") }}</option>
+        <option value="custom" {% if range == "custom" %}selected{% endif %}>{{ t("reports.custom") }}</option>
+      </select>
+    </div>
+    {% if range == "custom" %}
+    <div class="field">
+      <label for="start">{{ t("reports.from") }}</label>
+      <input type="date" id="start" name="start" value="{{ start_date }}" onchange="this.form.submit()">
+    </div>
+    <div class="field">
+      <label for="end">{{ t("reports.to") }}</label>
+      <input type="date" id="end" name="end" value="{{ end_date }}" onchange="this.form.submit()">
+    </div>
+    {% endif %}
+  </form>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-tile">
+    <span class="stat-label">{{ t("reports.revenue") }}</span>
+    <span class="stat-value">${{ "%.2f"|format(revenue) }}</span>
+  </div>
+  <div class="stat-tile">
+    <span class="stat-label">{{ t("reports.cost") }}</span>
+    <span class="stat-value">${{ "%.2f"|format(cost) }}</span>
+  </div>
+  <div class="stat-tile">
+    <span class="stat-label">{{ t("reports.gross_profit") }}</span>
+    <span class="stat-value {% if profit < 0 %}stat-critical{% else %}stat-good{% endif %}">${{ "%.2f"|format(profit) }}</span>
+  </div>
+  <div class="stat-tile">
+    <span class="stat-label">{{ t("reports.margin") }}</span>
+    <span class="stat-value">{{ "%.1f"|format(margin) }}%</span>
+  </div>
+  <div class="stat-tile">
+    <span class="stat-label">{{ t("reports.inventory_value") }}</span>
+    <span class="stat-value">${{ "%.2f"|format(inventory_value) }}</span>
+  </div>
+</div>
+
+<div class="panel">
+  <h3>{{ t("reports.revenue_by_day") }}</h3>
+  {% if daily_series %}
+  <div class="chart-bars">
+    {% for point in daily_series %}
+    <div class="chart-bar-col" title="{{ point.full_label }}: ${{ '%.2f'|format(point.revenue) }}">
+      <div class="chart-bar" style="height: {{ ((point.revenue / max_daily_revenue) * 100) | round(1) }}%;"></div>
+      <span class="chart-bar-label">{{ point.label }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">{{ t("reports.no_sales_range") }}</p>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h3>{{ t("reports.top_products") }}</h3>
+  {% if top_products %}
+  <table>
+    <thead><tr><th>{{ t("supplier_detail.col_product") }}</th><th>{{ t("reports.col_qty_sold") }}</th><th>{{ t("reports.revenue") }}</th></tr></thead>
+    <tbody>
+      {% for p in top_products %}
+      <tr>
+        <td>{{ p.name }}</td>
+        <td>{{ p.qty }}</td>
+        <td>${{ "%.2f"|format(p.revenue) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">{{ t("reports.no_sales_range") }}</p>
+  {% endif %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ t("brand.name") }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <h1 class="brand" style="display:block; text-align:center; margin-bottom:1.5rem;">{{ t("brand.name") }}</h1>
+
+      {% if is_first_run %}
+      <h2>{{ t("auth.setup_title") }}</h2>
+      <p class="muted">{{ t("auth.setup_help") }}</p>
+      {% else %}
+      <h2>{{ t("auth.login_title") }}</h2>
+      {% endif %}
+
+      {% if error == "missing_fields" %}
+      <p class="auth-error">{{ t("auth.error_missing_fields") }}</p>
+      {% elif error == "password_mismatch" %}
+      <p class="auth-error">{{ t("auth.error_password_mismatch") }}</p>
+      {% elif error == "invalid_credentials" %}
+      <p class="auth-error">{{ t("auth.error_invalid_credentials") }}</p>
+      {% endif %}
+
+      <form method="post" action="/login">
+        <div class="field">
+          <label for="username">{{ t("auth.username") }}</label>
+          <input type="text" id="username" name="username" required autofocus>
+        </div>
+        <div class="field">
+          <label for="password">{{ t("auth.password") }}</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        {% if is_first_run %}
+        <div class="field">
+          <label for="confirm_password">{{ t("auth.confirm_password") }}</label>
+          <input type="password" id="confirm_password" name="confirm_password" required>
+        </div>
+        {% endif %}
+        <button class="button" type="submit" style="width:100%;">
+          {% if is_first_run %}{{ t("auth.create_admin") }}{% else %}{{ t("auth.login_button") }}{% endif %}
+        </button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+  <h2 style="margin:0;">{{ t("nav.inventory") }}</h2>
+  <a class="button" href="/products/new">{{ t("nav.new_product") }}</a>
+</div>
+
+<div class="inventory-layout">
+  <div class="panel inventory-tree-panel">
+    <div id="inventory-tree"></div>
+  </div>
+
+  <div class="inventory-detail-panel" id="inventory-detail">
+    <div class="panel">
+      <p class="muted">{{ t("products.select_item_hint") }}</p>
+    </div>
+  </div>
+</div>
+
+<script type="application/json" id="catalog-data">{{ catalog_json | safe }}</script>
+<script type="application/json" id="category-tree-data">{{ category_tree_json | safe }}</script>
+<script src="/static/category_tree.js"></script>
+<script src="/static/inventory.js"></script>
+{% endblock %}
