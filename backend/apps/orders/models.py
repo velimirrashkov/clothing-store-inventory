@@ -36,9 +36,21 @@ class CartLine(models.Model):
 
 
 class Order(models.Model):
-    """Order status machine enforced in services.py, never arbitrary status writes (see §8.3)."""
+    """
+    Order status machine, enforced in services.py — never allow arbitrary status writes (§8.3):
+
+        pending_payment -> paid -> processing -> shipped -> delivered
+               |            |          |
+               +-> cancelled <---------+
+                            +-> refunded (partial or full)
+    """
 
     CHANNEL_CHOICES = [("online", "online"), ("pos", "pos")]
+    STATUS_CHOICES = [
+        ("pending_payment", "pending_payment"), ("paid", "paid"), ("processing", "processing"),
+        ("shipped", "shipped"), ("delivered", "delivered"), ("cancelled", "cancelled"),
+        ("refunded", "refunded"),
+    ]
     PAYMENT_STATUS_CHOICES = [
         ("pending", "pending"), ("paid", "paid"), ("refunded", "refunded"), ("failed", "failed"),
     ]
@@ -49,7 +61,7 @@ class Order(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
     email = models.EmailField(null=True, blank=True)  # POS sales rarely have one; see module docstring
     channel = models.CharField(max_length=10, choices=CHANNEL_CHOICES)
-    status = models.CharField(max_length=20, default="pending_payment")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending_payment")
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default="pending")
     # Recorded for till reconciliation/reporting only — no processor integration (see §12, deferred).
     payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES, null=True, blank=True)

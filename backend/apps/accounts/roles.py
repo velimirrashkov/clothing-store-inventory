@@ -14,6 +14,7 @@ ROLE_PERMISSIONS = {
         "inventory.run_count",
         "orders.fulfil_order",
         "orders.create_pos_order",
+        "orders.view_any_order",
     ],
     "manager": [
         "pricing.change_discount",

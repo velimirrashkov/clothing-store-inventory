@@ -2,6 +2,7 @@ venv/
 __pycache__/
 *.pyc
 .env
+architecture-spec.md
 backend/staticfiles/
 backend/.pytest_cache/
 backend/.hypothesis/

@@ -1,15 +1,18 @@
 # Clothing Store — Inventory & Webshop
 
-A modular-monolith rebuild of the clothing store's inventory/webshop system, following
-[architecture-spec.md](architecture-spec.md). Backend only so far — see "Status" below.
+A modular-monolith rebuild of the clothing store's inventory/webshop system, following an
+architecture spec kept locally as `architecture-spec.md` (gitignored — not pushed to GitHub,
+since it documents internal security controls like rate limits, session config, and the
+break-glass admin path, which shouldn't be public). Ask for a copy if you need it. Backend
+only so far — see "Status" below.
 
 **Stack:** Python 3.12 + Django 5 + Django REST Framework, PostgreSQL 16, Redis 7, Celery.
-No frontend yet (React SPA is Phase 2 — see architecture-spec.md §13).
+No frontend yet (React SPA is Phase 2).
 
 > The previous FastAPI/SQLite/Jinja2 version of this project lives on the `legacy-fastapi`
 > branch for reference. It is not being extended further.
 
-## Status: Phase 1 (inventory core)
+## Status
 
 Implemented, with real Postgres migrations and a passing test suite:
 
@@ -20,12 +23,16 @@ Implemented, with real Postgres migrations and a passing test suite:
   `/api/v1/categories`.
 - **inventory** — the append-only stock ledger (`record_movement`), reservations with TTL
   expiry, stocktakes, nightly ledger/cache reconciliation. This is the part of the spec
-  marked "read before changing anything" (§5) — see `apps/inventory/services.py`.
+  marked "read before changing anything" — see `apps/inventory/services.py`.
 - **audit** — append-only `AuditLog`, written explicitly from services (never via signals).
+- **orders** — cart + checkout (reserve at checkout-start, commit on confirm), POS in-store
+  sales (`create_pos_order`, immediate ledger decrement, VAT-inclusive tax, cash/card capture),
+  and the full order status machine: fulfil → ship → deliver, cancel, and partial/full refund
+  with optional restocking. Buyer-facing `/api/v1/me/orders` is scoped so one buyer can never
+  fetch another's order (404, not 403). See `apps/orders/services.py`.
 
-`orders`, `pricing`, and `customers` exist as schema-only stubs (their tables are FK targets
-for `inventory.Reservation` and `orders.Order`'s permissions), with checkout/fulfilment
-business logic deferred to Phase 2 per the spec's build order (§13).
+`pricing` and `customers` are still schema-only stubs (discount codes and buyer
+addresses/profiles aren't wired up yet).
 
 ## Requirements
 
@@ -47,8 +54,9 @@ docker compose up -d web
 ```
 
 The API is then live at **http://localhost:8000/api/v1/** (e.g. `/api/v1/products`,
-`/api/v1/categories`). The break-glass Django admin is at `/django-admin-x7q/` — superuser
-only, not a daily interface (see architecture-spec.md §9).
+`/api/v1/categories`). There's also a break-glass Django admin, superuser-only, mounted at an
+obscure path in `config/urls.py` — not a daily interface, and its exact path deliberately isn't
+repeated here (that's the point of it being obscure).
 
 Postgres and Redis are also reachable from the host on `localhost:5433` and `localhost:6380`
 (shifted off their default ports to avoid clashing with any local install).
@@ -62,8 +70,8 @@ docker compose run --rm web ruff check .
 
 The highest-priority tests are in `apps/inventory/tests/test_ledger.py` — they include a
 multi-threaded test proving concurrent reservations against a single unit of stock cannot
-oversell (architecture-spec.md §10.1). `apps/accounts/tests/test_permission_matrix.py` is the
-seed of the permission matrix described in §10.2 — add a row for every new endpoint.
+oversell. `apps/accounts/tests/test_permission_matrix.py` is the permission matrix — add a row
+for every new endpoint. `apps/orders/tests/test_selectors.py` covers the buyer-order IDOR case.
 
 ## Project layout
 
@@ -75,9 +83,9 @@ backend/
     accounts/            User, roles, sessions
     catalog/              Product, Variant, Category, search
     inventory/             the stock ledger — see services.py before touching this app
-    orders/                schema stub (Cart/Order/OrderLine) — Phase 2
-    pricing/               schema stub (Discount) — Phase 2
-    customers/              schema stub (Address, CustomerProfile) — Phase 2
+    orders/                cart, checkout, POS sales, fulfilment, refunds
+    pricing/               schema stub (Discount) — not wired up yet
+    customers/              schema stub (Address, CustomerProfile) — not wired up yet
     audit/               AuditLog + record()
   docker-compose.yml
   Dockerfile
@@ -85,18 +93,17 @@ backend/
 ```
 
 Each app follows the same internal shape (`models.py` / `services.py` / `selectors.py` /
-`api/` / `tasks.py` / `admin.py`) described in architecture-spec.md §2.1. The one rule that
-keeps it from rotting into a ball of mud: **apps talk to each other only through
-`services.py`/`selectors.py`, never by importing another app's models directly** (§2.2).
+`api/` / `tasks.py` / `admin.py`). The one rule that keeps it from rotting into a ball of mud:
+**apps talk to each other only through `services.py`/`selectors.py`, never by importing
+another app's models directly.**
 
 ## What's next
 
-Per architecture-spec.md §13:
-
-- **Phase 1 (this repo, backend)** — accounts, catalog, inventory, audit. ✅ done here.
-  Still open: the React back-office (products, variant matrix, stock adjustments, barcode
-  lookup, stocktake UI) — "run the real shop on this before writing any storefront code."
-- **Phase 2** — storefront (public catalog, cart, checkout with reservations), buyer
-  accounts, order history, payments.
-- **Phase 3** — returns, refunds, reporting, low-stock automation, purchase orders.
-- **Phase 4** — productization (multi-tenant seams, catalog API, per-tenant theming).
+- The React back-office (products, variant matrix, stock adjustments, barcode lookup,
+  stocktake UI, order management) — "run the real shop on this before writing any storefront
+  code." The backend APIs it needs already exist.
+- Real payment integration (checkout currently marks orders paid immediately — there's no
+  payment gateway yet, `payment_ref` is accepted as a placeholder).
+- Discount codes (`pricing` app), buyer addresses/profiles (`customers` app).
+- Reporting, low-stock automation, purchase orders, prerendering for SEO.
+- Productization (multi-tenant seams, catalog API, per-tenant theming).

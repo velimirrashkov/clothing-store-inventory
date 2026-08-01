@@ -20,12 +20,18 @@ from .serializers import (
 )
 
 
+class StockLevelCursorPagination(CursorPagination):
+    # StockLevel has no created_at (it's a denormalized cache, not an append-only log — see §4.4),
+    # so the default created_at ordering doesn't apply here.
+    ordering = "-updated_at"
+
+
 class StockLevelListView(ListAPIView):
     """GET /api/v1/admin/inventory/levels?low_stock=true&q="""
 
     serializer_class = StockLevelSerializer
     permission_classes = [HasPerm("inventory.adjust_stock")]
-    pagination_class = CursorPagination
+    pagination_class = StockLevelCursorPagination
 
     def get_queryset(self):
         qs = StockLevel.objects.select_related("variant").annotate(_available=F("on_hand") - F("reserved"))

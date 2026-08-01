@@ -19,6 +19,10 @@ PERMISSION_MATRIX = [
     ("admin", "accounts.manage_users", True),
     ("worker", "catalog.add_product", False),
     ("manager", "catalog.add_product", True),
+    (None, "orders.create_pos_order", False),
+    ("worker", "orders.create_pos_order", True),
+    (None, "orders.view_any_order", False),
+    ("worker", "orders.view_any_order", True),
 ]
 
 
@@ -38,9 +42,5 @@ def test_role_grants_expected_permission(seeded_roles, role, perm, expected):
     assert user.has_perm(perm) is expected
 
 
-@pytest.mark.django_db
-def test_buyer_cannot_see_another_buyers_order_gets_404_not_403(client, db):
-    """IDOR case from §10.2 — enforced at the selector layer once orders.selectors exists (Phase 2 seam)."""
-    owner = UserFactory()
-    other = UserFactory()
-    assert owner.pk != other.pk  # placeholder assertion; real check lands with orders.selectors in Phase 2
+# The IDOR case itself — buyer A requesting buyer B's order — is exercised against the real
+# selector in apps/orders/tests/test_selectors.py (test_buyer_cannot_fetch_another_buyers_order).

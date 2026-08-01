@@ -1,7 +1,7 @@
 """Read queries. Nothing here writes (see architecture-spec.md §2.1)."""
 from django.db.models import F
 
-from .models import Location, StockLevel
+from .models import Location, Reservation, StockLevel
 
 
 def default_location_id() -> int:
@@ -37,4 +37,15 @@ def low_stock_variants(threshold: int, location_id: int | None = None):
         .annotate(_available=F("on_hand") - F("reserved"))
         .filter(_available__lte=threshold)
         .select_related("variant")
+    )
+
+
+def active_reservations_for_cart(cart_id: int):
+    """
+    Lets `orders` read reservation state without importing inventory's models directly
+    (see architecture-spec.md §2.2 — apps talk to each other only through services/selectors).
+    """
+    return (
+        Reservation.objects.filter(cart_id=cart_id, status="active")
+        .select_related("variant", "variant__product")
     )
