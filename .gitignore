@@ -1,8 +1,9 @@
 venv/
 __pycache__/
 *.pyc
-inventory.db
-.session_secret
-server.pid
-server_out.log
-server_err.log
+.env
+backend/staticfiles/
+backend/.pytest_cache/
+backend/.hypothesis/
+backend/.coverage
+backend/htmlcov/
