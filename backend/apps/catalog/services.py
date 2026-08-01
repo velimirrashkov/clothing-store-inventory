@@ -66,6 +66,19 @@ def generate_variant_matrix(*, actor, product: Product, sizes: list[str], colors
     return created
 
 
+@transaction.atomic
+def update_variant(*, actor, variant: Variant, **changes) -> Variant:
+    before = {field: getattr(variant, field) for field in changes}
+    for field, value in changes.items():
+        setattr(variant, field, value)
+    variant.save(update_fields=[*changes.keys(), "updated_at"])
+    diff = {f: {"from": before[f], "to": changes[f]} for f in changes if before[f] != changes[f]}
+    if diff:
+        audit.record(actor=actor, action="catalog.variant_update", object_type="variant",
+                      object_id=str(variant.id), changes=diff)
+    return variant
+
+
 def assign_barcodes(variant_ids: list[int]) -> list[Variant]:
     """EAN-13 with checksum (see architecture-spec.md §8.1)."""
     variants = list(Variant.objects.filter(id__in=variant_ids, barcode__isnull=True))

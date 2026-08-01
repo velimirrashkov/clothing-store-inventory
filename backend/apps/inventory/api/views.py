@@ -1,5 +1,6 @@
 """Thin. Parse -> call service -> serialize (see architecture-spec.md §2.1, §7.2)."""
 from django.db.models import F
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
@@ -9,10 +10,11 @@ from apps.core.pagination import CursorPagination
 from apps.core.permissions import HasPerm
 
 from .. import services
-from ..models import StockLevel
+from ..models import StockCount, StockLevel
 from .serializers import (
     BarcodeLookupSerializer,
     MovementCreateSerializer,
+    StockCountDetailSerializer,
     StockCountLineSerializer,
     StockCountSerializer,
     StockLevelSerializer,
@@ -78,13 +80,33 @@ class BarcodeLookupView(APIView):
         return Response(data)
 
 
-class StockCountOpenView(APIView):
+class StockCountListView(ListAPIView):
+    """GET /api/v1/admin/inventory/counts?status=open"""
+
+    serializer_class = StockCountSerializer
     permission_classes = [HasPerm("inventory.run_count")]
+    pagination_class = None
+
+    def get_queryset(self):
+        qs = StockCount.objects.order_by("-started_at")
+        if status_filter := self.request.query_params.get("status"):
+            qs = qs.filter(status=status_filter)
+        return qs
 
     def post(self, request):
         location_id = request.data.get("location_id") or services.default_location_id()
         count = services.open_count(location_id=location_id, actor=request.user)
         return Response(StockCountSerializer(count).data, status=status.HTTP_201_CREATED)
+
+
+class StockCountDetailView(APIView):
+    """GET /api/v1/admin/inventory/counts/{id} — the count plus every line (expected vs counted)."""
+
+    permission_classes = [HasPerm("inventory.run_count")]
+
+    def get(self, request, count_id):
+        count = get_object_or_404(StockCount.objects.prefetch_related("lines", "lines__variant"), id=count_id)
+        return Response(StockCountDetailSerializer(count).data)
 
 
 class StockCountLineSubmitView(APIView):

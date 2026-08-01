@@ -44,6 +44,15 @@ class StockCountSerializer(serializers.ModelSerializer):
 
 
 class StockCountLineSerializer(serializers.ModelSerializer):
+    sku = serializers.CharField(source="variant.sku", read_only=True)
+
     class Meta:
         model = StockCountLine
-        fields = ["id", "count", "variant", "expected", "counted", "counted_by", "counted_at"]
+        fields = ["id", "count", "variant", "sku", "expected", "counted", "counted_by", "counted_at"]
+
+
+class StockCountDetailSerializer(StockCountSerializer):
+    lines = StockCountLineSerializer(many=True, read_only=True)
+
+    class Meta(StockCountSerializer.Meta):
+        fields = StockCountSerializer.Meta.fields + ["lines"]
