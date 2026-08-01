@@ -147,6 +147,11 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 RESERVATION_TTL = timedelta(minutes=20)
 
+# Flat-rate VAT assumption for a single-country BG retailer. Prices are VAT-inclusive
+# (standard for Bulgarian retail) — this is used only to derive tax_amount for receipts/
+# reports, never added on top of a price. Revisit if the shop ever sells across VAT zones.
+VAT_RATE = 0.20
+
 # --- Rate limiting (see architecture-spec.md §6.4) -------------------------
 RATE_LIMITS = {
     "login_per_ip": "5/m",

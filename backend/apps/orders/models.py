@@ -1,6 +1,10 @@
 """
-Phase 1 stub — schema only, per architecture-spec.md §4.7. `inventory.Reservation` FKs into `Cart`/`Order`
-so these tables exist from day one; checkout/fulfilment services.py logic lands in Phase 2 (§13).
+Schema per architecture-spec.md §4.7. `inventory.Reservation` FKs into `Cart`/`Order` so these tables
+exist from day one; online checkout/fulfilment services.py logic is still deferred to Phase 2 (§13).
+POS order entry (`create_pos_order`, Phase 1) is implemented in services.py and needed two deliberate
+deviations from the spec's literal schema: `email` and `shipping_address` are nullable here, because a
+walk-in till sale has neither — the spec's NOT NULL assumes online guest checkout, which still collects
+an email.
 """
 import uuid
 
@@ -38,14 +42,17 @@ class Order(models.Model):
     PAYMENT_STATUS_CHOICES = [
         ("pending", "pending"), ("paid", "paid"), ("refunded", "refunded"), ("failed", "failed"),
     ]
+    PAYMENT_METHOD_CHOICES = [("cash", "cash"), ("card", "card")]
 
     public_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     reference = models.CharField(max_length=20, unique=True)  # e.g. ORD-2026-00417
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
-    email = models.EmailField()
+    email = models.EmailField(null=True, blank=True)  # POS sales rarely have one; see module docstring
     channel = models.CharField(max_length=10, choices=CHANNEL_CHOICES)
     status = models.CharField(max_length=20, default="pending_payment")
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default="pending")
+    # Recorded for till reconciliation/reporting only — no processor integration (see §12, deferred).
+    payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES, null=True, blank=True)
     subtotal_amount = models.BigIntegerField()
     discount_amount = models.BigIntegerField(default=0)
     shipping_amount = models.BigIntegerField(default=0)
@@ -53,7 +60,7 @@ class Order(models.Model):
     total_amount = models.BigIntegerField()
     currency = models.CharField(max_length=3)
     discount = models.ForeignKey("pricing.Discount", null=True, blank=True, on_delete=models.SET_NULL)
-    shipping_address = models.JSONField()  # frozen snapshot, not a FK
+    shipping_address = models.JSONField(null=True, blank=True)  # frozen snapshot, not a FK
     billing_address = models.JSONField(null=True, blank=True)
     placed_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -65,6 +72,7 @@ class Order(models.Model):
             models.Index(fields=["reference"]),
         ]
         permissions = [
+            ("create_pos_order", "Can ring up an in-store sale"),
             ("fulfil_order", "Can fulfil order"),
             ("view_any_order", "Can view any user's order"),
             ("refund_order", "Can issue refunds"),
