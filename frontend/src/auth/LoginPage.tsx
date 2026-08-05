@@ -4,10 +4,13 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import { useLogin, useMe } from "../api/auth";
 import { ApiError } from "../api/client";
+import { LanguageSwitcher } from "../i18n/LanguageSwitcher";
+import { useTranslation } from "../i18n/LanguageContext";
 
 /** Separate staff login route (see architecture-spec.md §6.4) — mandatory MFA for staff is a
  * backend gap, not implemented yet, so this is a plain email/password form for now. */
 export default function LoginPage() {
+  const { t } = useTranslation();
   const { data: me } = useMe();
   const login = useLogin();
   const navigate = useNavigate();
@@ -29,7 +32,7 @@ export default function LoginPage() {
       {
         onSuccess: () => navigate("/app/products"),
         // Generic error text — never reveal whether the email exists (§6.4).
-        onError: (err) => setError(err instanceof ApiError ? err.message : "Something went wrong."),
+        onError: (err) => setError(err instanceof ApiError ? err.message : t("auth.generic_error")),
       },
     );
   }
@@ -37,9 +40,12 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100">
       <form onSubmit={handleSubmit} className="w-80 space-y-4 rounded-lg bg-white p-8 shadow-sm">
-        <h1 className="text-lg font-semibold text-slate-900">Back office sign in</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-semibold text-slate-900">{t("auth.sign_in_title")}</h1>
+          <LanguageSwitcher />
+        </div>
         <div className="space-y-1">
-          <label htmlFor="email" className="text-sm font-medium text-slate-700">Email</label>
+          <label htmlFor="email" className="text-sm font-medium text-slate-700">{t("auth.email")}</label>
           <input
             id="email"
             type="email"
@@ -51,7 +57,7 @@ export default function LoginPage() {
           />
         </div>
         <div className="space-y-1">
-          <label htmlFor="password" className="text-sm font-medium text-slate-700">Password</label>
+          <label htmlFor="password" className="text-sm font-medium text-slate-700">{t("auth.password")}</label>
           <input
             id="password"
             type="password"
@@ -67,7 +73,7 @@ export default function LoginPage() {
           disabled={login.isPending}
           className="w-full rounded bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
         >
-          {login.isPending ? "Signing in…" : "Sign in"}
+          {login.isPending ? t("auth.signing_in") : t("auth.sign_in")}
         </button>
       </form>
     </div>

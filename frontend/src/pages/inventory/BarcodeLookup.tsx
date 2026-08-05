@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { useBarcodeLookup } from "../../api/inventory";
 import type { VariantStaff } from "../../api/types";
+import { useTranslation } from "../../i18n/LanguageContext";
 import { formatMoney } from "../../lib/money";
 
 /**
@@ -11,6 +12,7 @@ import { formatMoney } from "../../lib/money";
  * browser. No zxing-js dependency pulled in for Phase 1 — the fallback covers the gap.
  */
 export function BarcodeLookup() {
+  const { t } = useTranslation();
   const [barcode, setBarcode] = useState("");
   const [result, setResult] = useState<VariantStaff | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -83,12 +85,12 @@ export function BarcodeLookup() {
         <input
           value={barcode}
           onChange={(e) => setBarcode(e.target.value)}
-          placeholder="Scan or type a barcode"
+          placeholder={t("inventory.scan_or_type")}
           autoFocus
           className="flex-1 rounded border border-slate-300 px-3 py-2 text-sm"
         />
         <button type="submit" className="rounded bg-slate-900 px-3 py-2 text-sm text-white hover:bg-slate-700">
-          Look up
+          {t("inventory.look_up")}
         </button>
         {scannerSupported && (
           <button
@@ -96,7 +98,7 @@ export function BarcodeLookup() {
             onClick={() => setScanning((s) => !s)}
             className="rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
           >
-            {scanning ? "Stop camera" : "Use camera"}
+            {scanning ? t("inventory.stop_camera") : t("inventory.use_camera")}
           </button>
         )}
       </form>
@@ -105,7 +107,7 @@ export function BarcodeLookup() {
         <video ref={videoRef} autoPlay muted playsInline className="w-full max-w-sm rounded border border-slate-300" />
       )}
 
-      {notFound && <p className="text-sm text-red-600">No variant with that barcode.</p>}
+      {notFound && <p className="text-sm text-red-600">{t("inventory.not_found")}</p>}
 
       {result && (
         <div className="rounded border border-slate-200 p-4 text-sm">
@@ -114,7 +116,7 @@ export function BarcodeLookup() {
             {result.size} · {result.color} · {formatMoney(result.price_amount, result.currency)}
           </p>
           <p className={`mt-1 ${result.available <= 5 ? "font-semibold text-amber-700" : "text-slate-700"}`}>
-            Available: {result.available}
+            {t("inventory.available")}: {result.available}
           </p>
         </div>
       )}

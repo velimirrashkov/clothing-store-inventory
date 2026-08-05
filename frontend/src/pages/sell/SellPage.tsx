@@ -4,6 +4,7 @@ import { useCategories, useProduct } from "../../api/catalog";
 import { ApiError } from "../../api/client";
 import { useCreatePosOrder } from "../../api/orders";
 import type { Order, ProductAdminListItem, VariantStaff } from "../../api/types";
+import { useTranslation } from "../../i18n/LanguageContext";
 import { formatMoney } from "../../lib/money";
 import { CategoryTree } from "../products/CategoryTree";
 
@@ -19,6 +20,7 @@ interface CartLine {
 }
 
 export default function SellPage() {
+  const { t } = useTranslation();
   const { data: categories, isLoading } = useCategories();
   const [selectedProduct, setSelectedProduct] = useState<ProductAdminListItem | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -70,7 +72,7 @@ export default function SellPage() {
           setReceipt(order);
           setCart([]);
         },
-        onError: (err) => setError(err instanceof ApiError ? err.message : "Could not complete sale."),
+        onError: (err) => setError(err instanceof ApiError ? err.message : t("sell.error_complete")),
       },
     );
   }
@@ -82,9 +84,9 @@ export default function SellPage() {
   return (
     <div className="flex h-screen">
       <div className="flex w-72 shrink-0 flex-col border-r border-slate-200 bg-white">
-        <div className="border-b border-slate-200 p-3 text-sm font-semibold text-slate-900">Browse</div>
+        <div className="border-b border-slate-200 p-3 text-sm font-semibold text-slate-900">{t("sell.browse")}</div>
         <div className="flex-1 overflow-auto p-2">
-          {isLoading && <p className="p-2 text-sm text-slate-500">Loading…</p>}
+          {isLoading && <p className="p-2 text-sm text-slate-500">{t("common.loading")}</p>}
           {categories && (
             <CategoryTree categories={categories} selectedProductId={selectedProduct?.id ?? null}
                            onSelectProduct={setSelectedProduct} />
@@ -96,14 +98,14 @@ export default function SellPage() {
         {selectedProduct ? (
           <VariantPicker productId={selectedProduct.id} onAdd={addToCart} />
         ) : (
-          <p className="p-8 text-sm text-slate-500">Pick a product to see its variants.</p>
+          <p className="p-8 text-sm text-slate-500">{t("sell.pick_product")}</p>
         )}
       </div>
 
       <div className="flex w-80 shrink-0 flex-col border-l border-slate-200 bg-white">
-        <div className="border-b border-slate-200 p-3 text-sm font-semibold text-slate-900">Cart</div>
+        <div className="border-b border-slate-200 p-3 text-sm font-semibold text-slate-900">{t("sell.cart")}</div>
         <div className="flex-1 overflow-auto p-3">
-          {cart.length === 0 && <p className="text-sm text-slate-500">Cart is empty.</p>}
+          {cart.length === 0 && <p className="text-sm text-slate-500">{t("sell.cart_empty")}</p>}
           {cart.map((line) => (
             <div key={line.variantId} className="mb-2 flex items-center justify-between text-sm">
               <div>
@@ -127,7 +129,7 @@ export default function SellPage() {
         </div>
         <div className="border-t border-slate-200 p-3">
           <div className="mb-2 flex justify-between text-sm font-semibold">
-            <span>Total</span>
+            <span>{t("sell.total")}</span>
             <span>{formatMoney(total, currency)}</span>
           </div>
           <div className="mb-2 flex gap-2 text-sm">
@@ -135,7 +137,7 @@ export default function SellPage() {
               <label key={method} className="flex items-center gap-1">
                 <input type="radio" name="payment" checked={paymentMethod === method}
                        onChange={() => setPaymentMethod(method)} />
-                {method}
+                {t(`sell.${method}`)}
               </label>
             ))}
           </div>
@@ -145,7 +147,7 @@ export default function SellPage() {
             disabled={cart.length === 0 || createPosOrder.isPending}
             className="w-full rounded bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
           >
-            {createPosOrder.isPending ? "Completing…" : "Complete sale"}
+            {createPosOrder.isPending ? t("sell.completing") : t("sell.complete_sale")}
           </button>
         </div>
       </div>
@@ -154,8 +156,9 @@ export default function SellPage() {
 }
 
 function VariantPicker({ productId, onAdd }: { productId: number; onAdd: (variant: VariantStaff) => void }) {
+  const { t } = useTranslation();
   const { data: product, isLoading } = useProduct(productId);
-  if (isLoading || !product) return <div className="p-8 text-slate-500">Loading…</div>;
+  if (isLoading || !product) return <div className="p-8 text-slate-500">{t("common.loading")}</div>;
 
   return (
     <div className="p-6">
@@ -170,20 +173,21 @@ function VariantPicker({ productId, onAdd }: { productId: number; onAdd: (varian
           >
             <p className="font-medium">{variant.size} · {variant.color}</p>
             <p className="text-slate-500">{formatMoney(variant.price_amount, variant.currency)}</p>
-            <p className="text-xs text-slate-400">{variant.available} in stock</p>
+            <p className="text-xs text-slate-400">{variant.available} {t("sell.in_stock")}</p>
           </button>
         ))}
       </div>
-      {product.variants.length === 0 && <p className="text-sm text-slate-500">No variants for this product.</p>}
+      {product.variants.length === 0 && <p className="text-sm text-slate-500">{t("sell.no_variants")}</p>}
     </div>
   );
 }
 
 function Receipt({ order, onNewSale }: { order: Order; onNewSale: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="mx-auto max-w-sm p-8">
       <div className="rounded border border-slate-200 p-6 text-sm">
-        <h2 className="mb-1 text-center text-lg font-semibold">Sale complete</h2>
+        <h2 className="mb-1 text-center text-lg font-semibold">{t("sell.sale_complete")}</h2>
         <p className="mb-4 text-center text-slate-500">{order.reference}</p>
         <ul className="mb-4 space-y-1">
           {order.lines.map((line, i) => (
@@ -194,12 +198,12 @@ function Receipt({ order, onNewSale }: { order: Order; onNewSale: () => void }) 
           ))}
         </ul>
         <div className="flex justify-between border-t border-slate-200 pt-2 font-semibold">
-          <span>Total ({order.payment_method})</span>
+          <span>{t("sell.total")} ({order.payment_method && t(`sell.${order.payment_method}`)})</span>
           <span>{formatMoney(order.total_amount, order.currency)}</span>
         </div>
       </div>
       <button onClick={onNewSale} className="mt-4 w-full rounded bg-slate-900 px-3 py-2 text-sm text-white hover:bg-slate-700">
-        New sale
+        {t("sell.new_sale")}
       </button>
     </div>
   );

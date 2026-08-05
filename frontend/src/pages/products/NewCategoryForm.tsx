@@ -3,8 +3,10 @@ import type { FormEvent } from "react";
 
 import { useCategories, useCreateCategory } from "../../api/catalog";
 import { ApiError } from "../../api/client";
+import { useTranslation } from "../../i18n/LanguageContext";
 
 export function NewCategoryForm({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
   const { data: categories } = useCategories();
   const createCategory = useCreateCategory();
   const [name, setName] = useState("");
@@ -18,7 +20,7 @@ export function NewCategoryForm({ onClose }: { onClose: () => void }) {
       { name, parent: parent ? Number(parent) : null },
       {
         onSuccess: () => onClose(),
-        onError: (err) => setError(err instanceof ApiError ? err.message : "Could not create category."),
+        onError: (err) => setError(err instanceof ApiError ? err.message : t("products.error_create_category")),
       },
     );
   }
@@ -29,7 +31,7 @@ export function NewCategoryForm({ onClose }: { onClose: () => void }) {
         autoFocus
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Category name"
+        placeholder={t("products.category_name_placeholder")}
         className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
       />
       <select
@@ -37,7 +39,7 @@ export function NewCategoryForm({ onClose }: { onClose: () => void }) {
         onChange={(e) => setParent(e.target.value)}
         className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
       >
-        <option value="">No parent (top level)</option>
+        <option value="">{t("products.no_parent")}</option>
         {categories?.map((c) => (
           <option key={c.id} value={c.id}>{c.name}</option>
         ))}
@@ -46,10 +48,10 @@ export function NewCategoryForm({ onClose }: { onClose: () => void }) {
       <div className="flex gap-2">
         <button type="submit" disabled={!name || createCategory.isPending}
                 className="rounded bg-slate-900 px-3 py-1 text-xs text-white hover:bg-slate-700 disabled:opacity-50">
-          Create
+          {t("common.create")}
         </button>
         <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-800">
-          Cancel
+          {t("common.cancel")}
         </button>
       </div>
     </form>

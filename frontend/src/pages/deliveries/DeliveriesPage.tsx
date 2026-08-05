@@ -5,6 +5,7 @@ import { useCategories, useProduct } from "../../api/catalog";
 import { ApiError } from "../../api/client";
 import { useDeliveries, useReceiveDelivery, useSuppliers, useVendorCatalog } from "../../api/suppliers";
 import type { ProductAdminListItem, VariantStaff } from "../../api/types";
+import { useTranslation } from "../../i18n/LanguageContext";
 import { CategoryTree } from "../products/CategoryTree";
 
 interface DraftLine {
@@ -17,6 +18,7 @@ interface DraftLine {
 }
 
 export default function DeliveriesPage() {
+  const { t } = useTranslation();
   const { data: suppliers } = useSuppliers();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: deliveries } = useDeliveries();
@@ -50,7 +52,7 @@ export default function DeliveriesPage() {
   function submit() {
     setError(null);
     if (!supplierId) {
-      setError("Choose a supplier.");
+      setError(t("deliveries.error_choose_supplier"));
       return;
     }
     receiveDelivery.mutate(
@@ -65,7 +67,7 @@ export default function DeliveriesPage() {
           setLines([]);
           setReference("");
         },
-        onError: (err) => setError(err instanceof ApiError ? err.message : "Could not receive delivery."),
+        onError: (err) => setError(err instanceof ApiError ? err.message : t("deliveries.error_receive")),
       },
     );
   }
@@ -73,9 +75,9 @@ export default function DeliveriesPage() {
   return (
     <div className="flex h-screen">
       <div className="flex w-72 shrink-0 flex-col border-r border-slate-200 bg-white">
-        <div className="border-b border-slate-200 p-3 text-sm font-semibold text-slate-900">Browse products</div>
+        <div className="border-b border-slate-200 p-3 text-sm font-semibold text-slate-900">{t("deliveries.browse_products")}</div>
         <div className="flex-1 overflow-auto p-2">
-          {categoriesLoading && <p className="p-2 text-sm text-slate-500">Loading…</p>}
+          {categoriesLoading && <p className="p-2 text-sm text-slate-500">{t("common.loading")}</p>}
           {categories && (
             <CategoryTree categories={categories} selectedProductId={selectedProduct?.id ?? null}
                            onSelectProduct={setSelectedProduct} />
@@ -86,17 +88,19 @@ export default function DeliveriesPage() {
       <div className="flex-1 overflow-auto">
         {confirmedDelivery ? (
           <div className="p-6">
-            <p className="mb-3 text-sm font-medium text-green-700">Delivery #{confirmedDelivery} received — stock updated.</p>
+            <p className="mb-3 text-sm font-medium text-green-700">
+              {t("deliveries.delivery_number")}{confirmedDelivery} {t("deliveries.received")}
+            </p>
             <button onClick={() => setConfirmedDelivery(null)}
                     className="rounded bg-slate-900 px-3 py-1.5 text-sm text-white hover:bg-slate-700">
-              Receive another
+              {t("deliveries.receive_another")}
             </button>
           </div>
         ) : selectedProduct ? (
           <VariantPicker productId={selectedProduct.id} onAdd={addLine} />
         ) : (
           <div className="p-6">
-            <p className="mb-6 text-sm text-slate-500">Pick a product on the left to add lines to this delivery.</p>
+            <p className="mb-6 text-sm text-slate-500">{t("deliveries.pick_product")}</p>
             <DeliveryHistory deliveries={deliveries?.results ?? []} />
           </div>
         )}
@@ -104,20 +108,20 @@ export default function DeliveriesPage() {
 
       {!confirmedDelivery && (
         <div className="flex w-96 shrink-0 flex-col border-l border-slate-200 bg-white">
-          <div className="border-b border-slate-200 p-3 text-sm font-semibold text-slate-900">New delivery</div>
+          <div className="border-b border-slate-200 p-3 text-sm font-semibold text-slate-900">{t("deliveries.new_delivery")}</div>
           <div className="space-y-2 border-b border-slate-200 p-3">
             <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}
                     className="w-full rounded border border-slate-300 px-2 py-1 text-sm">
-              <option value="">Choose supplier…</option>
+              <option value="">{t("deliveries.choose_supplier")}</option>
               {suppliers?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
             <input value={reference} onChange={(e) => setReference(e.target.value)}
-                   placeholder="Invoice / delivery note ref (optional)"
+                   placeholder={t("deliveries.reference_placeholder")}
                    className="w-full rounded border border-slate-300 px-2 py-1 text-sm" />
           </div>
 
           <div className="flex-1 overflow-auto p-3">
-            {lines.length === 0 && <p className="text-sm text-slate-500">No lines yet.</p>}
+            {lines.length === 0 && <p className="text-sm text-slate-500">{t("deliveries.no_lines")}</p>}
             {lines.map((line) => (
               <div key={line.variantId} className="mb-2 rounded border border-slate-100 p-2 text-sm">
                 <div className="flex items-center justify-between">
@@ -126,13 +130,13 @@ export default function DeliveriesPage() {
                 </div>
                 <div className="mt-1 flex items-center gap-2 text-xs">
                   <label>
-                    Qty
+                    {t("deliveries.qty")}
                     <input type="number" min={1} value={line.quantity}
                            onChange={(e) => updateLine(line.variantId, { quantity: Math.max(1, Number(e.target.value)) })}
                            className="ml-1 w-14 rounded border border-slate-300 px-1 py-0.5" />
                   </label>
                   <label>
-                    Unit cost
+                    {t("deliveries.unit_cost")}
                     <input type="number" min={0} step="0.01" value={(line.unitCost / 100).toFixed(2)}
                            onChange={(e) => updateLine(line.variantId, { unitCost: Math.round(Number(e.target.value) * 100) })}
                            className="ml-1 w-20 rounded border border-slate-300 px-1 py-0.5" />
@@ -149,7 +153,7 @@ export default function DeliveriesPage() {
               disabled={lines.length === 0 || receiveDelivery.isPending}
               className="w-full rounded bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
             >
-              {receiveDelivery.isPending ? "Receiving…" : "Receive delivery"}
+              {receiveDelivery.isPending ? t("deliveries.receiving") : t("deliveries.receive")}
             </button>
           </div>
         </div>
@@ -162,12 +166,13 @@ function VariantPicker({ productId, onAdd }: {
   productId: number;
   onAdd: (variant: VariantStaff, defaultCost: number) => void;
 }) {
+  const { t } = useTranslation();
   const { data: me } = useMe();
   const canSeeCosts = !!me?.permissions.includes("suppliers.manage_suppliers");
   const { data: product, isLoading } = useProduct(productId);
   const { data: vendorCatalog } = useVendorCatalog(productId, canSeeCosts);
 
-  if (isLoading || !product) return <div className="p-8 text-slate-500">Loading…</div>;
+  if (isLoading || !product) return <div className="p-8 text-slate-500">{t("common.loading")}</div>;
 
   // If this product has a quoted cost from any supplier, use it as a starting point — still
   // editable per line, since what actually arrives may differ from the quote.
@@ -184,28 +189,29 @@ function VariantPicker({ productId, onAdd }: {
             className="rounded border border-slate-200 p-3 text-left text-sm hover:border-slate-400"
           >
             <p className="font-medium">{variant.size} · {variant.color}</p>
-            <p className="text-slate-500">{variant.available} currently in stock</p>
+            <p className="text-slate-500">{variant.available} {t("deliveries.currently_in_stock")}</p>
           </button>
         ))}
       </div>
-      {product.variants.length === 0 && <p className="text-sm text-slate-500">No variants for this product.</p>}
+      {product.variants.length === 0 && <p className="text-sm text-slate-500">{t("sell.no_variants")}</p>}
     </div>
   );
 }
 
 function DeliveryHistory({ deliveries }: { deliveries: { id: number; supplier_name: string; reference: string; created_at: string; lines: unknown[] }[] }) {
+  const { t } = useTranslation();
   if (deliveries.length === 0) return null;
   return (
     <div>
-      <h3 className="mb-2 text-sm font-semibold text-slate-900">Recent deliveries</h3>
+      <h3 className="mb-2 text-sm font-semibold text-slate-900">{t("deliveries.recent")}</h3>
       <table className="w-full max-w-2xl text-sm">
         <thead>
           <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
             <th className="py-1 pr-2">#</th>
-            <th className="py-1 pr-2">Supplier</th>
-            <th className="py-1 pr-2">Reference</th>
-            <th className="py-1 pr-2">Lines</th>
-            <th className="py-1 pr-2">Date</th>
+            <th className="py-1 pr-2">{t("deliveries.col_supplier")}</th>
+            <th className="py-1 pr-2">{t("deliveries.col_reference")}</th>
+            <th className="py-1 pr-2">{t("deliveries.col_lines")}</th>
+            <th className="py-1 pr-2">{t("deliveries.col_date")}</th>
           </tr>
         </thead>
         <tbody>

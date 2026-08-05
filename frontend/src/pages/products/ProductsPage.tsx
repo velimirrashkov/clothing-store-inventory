@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { useCategories } from "../../api/catalog";
 import type { ProductAdminListItem } from "../../api/types";
+import { useTranslation } from "../../i18n/LanguageContext";
 import { CategoryTree } from "./CategoryTree";
 import { NewCategoryForm } from "./NewCategoryForm";
 import { NewProductForm } from "./NewProductForm";
@@ -13,6 +14,7 @@ import { ProductDetailPanel } from "./ProductDetailPanel";
  * has used since the original inventory tool — this is the same shape, rebuilt on the new stack).
  */
 export default function ProductsPage() {
+  const { t } = useTranslation();
   const { data: categories, isLoading } = useCategories();
   const [selectedProduct, setSelectedProduct] = useState<ProductAdminListItem | null>(null);
   const [newCategoryOpen, setNewCategoryOpen] = useState(false);
@@ -22,13 +24,13 @@ export default function ProductsPage() {
     <div className="flex h-screen">
       <div className="flex w-80 shrink-0 flex-col border-r border-slate-200 bg-white">
         <div className="flex items-center justify-between border-b border-slate-200 p-3">
-          <h1 className="text-sm font-semibold text-slate-900">Products</h1>
+          <h1 className="text-sm font-semibold text-slate-900">{t("products.title")}</h1>
           <div className="flex gap-2 text-xs">
             <button onClick={() => setNewCategoryOpen((o) => !o)} className="text-slate-600 hover:text-slate-900">
-              + Category
+              {t("products.add_category")}
             </button>
             <button onClick={() => setNewProductOpen((o) => !o)} className="text-slate-600 hover:text-slate-900">
-              + Product
+              {t("products.add_product")}
             </button>
           </div>
         </div>
@@ -40,7 +42,7 @@ export default function ProductsPage() {
           />
         )}
         <div className="flex-1 overflow-auto p-2">
-          {isLoading && <p className="p-2 text-sm text-slate-500">Loading…</p>}
+          {isLoading && <p className="p-2 text-sm text-slate-500">{t("common.loading")}</p>}
           {categories && (
             <CategoryTree
               categories={categories}
@@ -55,7 +57,7 @@ export default function ProductsPage() {
         {selectedProduct ? (
           <ProductDetailPanel key={selectedProduct.id} productId={selectedProduct.id} />
         ) : (
-          <div className="p-8 text-sm text-slate-500">Select a product from the tree, or create a new one.</div>
+          <div className="p-8 text-sm text-slate-500">{t("products.select_prompt")}</div>
         )}
       </div>
     </div>

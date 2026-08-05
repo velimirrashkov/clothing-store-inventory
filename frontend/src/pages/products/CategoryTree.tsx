@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 
 import { useProducts } from "../../api/catalog";
 import type { Category, ProductAdminListItem } from "../../api/types";
+import { useTranslation } from "../../i18n/LanguageContext";
 
 /**
  * Categories are fetched in full up front (there are only ever a handful of dozens of them),
@@ -18,6 +19,7 @@ export function CategoryTree({
   selectedProductId: number | null;
   onSelectProduct: (product: ProductAdminListItem) => void;
 }) {
+  const { t } = useTranslation();
   const childrenByParent = useMemo(() => {
     const map = new Map<number | null, Category[]>();
     for (const category of categories) {
@@ -32,7 +34,7 @@ export function CategoryTree({
   const roots = childrenByParent.get(null) ?? [];
 
   if (roots.length === 0) {
-    return <p className="p-3 text-sm text-slate-500">No categories yet — create one to get started.</p>;
+    return <p className="p-3 text-sm text-slate-500">{t("products.no_categories")}</p>;
   }
 
   return (
@@ -64,6 +66,7 @@ function CategoryNode({
   selectedProductId: number | null;
   onSelectProduct: (product: ProductAdminListItem) => void;
 }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const children = childrenByParent.get(category.id ?? -1) ?? [];
   const { data: productsPage, isLoading } = useProducts({ category: category.slug, enabled: expanded });
@@ -94,7 +97,7 @@ function CategoryNode({
 
           {isLoading && (
             <li className="py-1 text-xs text-slate-400" style={{ paddingLeft: `${(depth + 1) * 14 + 8}px` }}>
-              Loading…
+              {t("common.loading")}
             </li>
           )}
           {productsPage?.results.map((product) => (
@@ -110,14 +113,14 @@ function CategoryNode({
               >
                 {product.name}
                 {product.status !== "active" && (
-                  <span className="ml-1 text-xs opacity-70">({product.status})</span>
+                  <span className="ml-1 text-xs opacity-70">({t(`status.${product.status}`)})</span>
                 )}
               </button>
             </li>
           ))}
           {!isLoading && productsPage?.results.length === 0 && children.length === 0 && (
             <li className="py-1 text-xs text-slate-400" style={{ paddingLeft: `${(depth + 1) * 14 + 8}px` }}>
-              Empty
+              {t("products.empty")}
             </li>
           )}
         </ul>

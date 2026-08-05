@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { useStockLevels } from "../../api/inventory";
+import { useTranslation } from "../../i18n/LanguageContext";
 import { BarcodeLookup } from "./BarcodeLookup";
 
 /**
@@ -10,6 +11,7 @@ import { BarcodeLookup } from "./BarcodeLookup";
  * belongs on the Products page, which already shows each variant's availability.
  */
 export default function InventoryPage() {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [lowStockOnly, setLowStockOnly] = useState(true);
   const { data, isLoading } = useStockLevels({ lowStock: lowStockOnly && !query, q: query || undefined });
@@ -17,43 +19,43 @@ export default function InventoryPage() {
   return (
     <div className="space-y-8 p-6">
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-slate-900">Barcode lookup</h2>
+        <h2 className="mb-3 text-sm font-semibold text-slate-900">{t("inventory.barcode_lookup")}</h2>
         <BarcodeLookup />
       </section>
 
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-900">
-            {query ? "Search results" : "Low stock"}
+            {query ? t("inventory.search_results") : t("inventory.low_stock")}
           </h2>
           <div className="flex items-center gap-3">
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by SKU"
+              placeholder={t("inventory.search_by_sku")}
               className="rounded border border-slate-300 px-2 py-1 text-sm"
             />
             {!query && (
               <label className="flex items-center gap-1 text-xs text-slate-600">
                 <input type="checkbox" checked={lowStockOnly} onChange={(e) => setLowStockOnly(e.target.checked)} />
-                Low stock only (≤5)
+                {t("inventory.low_stock_only")}
               </label>
             )}
           </div>
         </div>
 
-        {isLoading && <p className="text-sm text-slate-500">Loading…</p>}
+        {isLoading && <p className="text-sm text-slate-500">{t("common.loading")}</p>}
         {!isLoading && data?.results.length === 0 && (
-          <p className="text-sm text-slate-500">Nothing to show.</p>
+          <p className="text-sm text-slate-500">{t("inventory.nothing_to_show")}</p>
         )}
         {data && data.results.length > 0 && (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
-                <th className="py-1 pr-2">SKU</th>
-                <th className="py-1 pr-2">On hand</th>
-                <th className="py-1 pr-2">Reserved</th>
-                <th className="py-1 pr-2">Available</th>
+                <th className="py-1 pr-2">{t("products.col_sku")}</th>
+                <th className="py-1 pr-2">{t("inventory.col_on_hand")}</th>
+                <th className="py-1 pr-2">{t("inventory.col_reserved")}</th>
+                <th className="py-1 pr-2">{t("products.col_available")}</th>
               </tr>
             </thead>
             <tbody>

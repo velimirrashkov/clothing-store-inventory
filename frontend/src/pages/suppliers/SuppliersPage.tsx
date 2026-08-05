@@ -4,8 +4,10 @@ import type { FormEvent } from "react";
 import { useMe } from "../../api/auth";
 import { ApiError } from "../../api/client";
 import { useCreateSupplier, useSuppliers, useUpdateSupplier } from "../../api/suppliers";
+import { useTranslation } from "../../i18n/LanguageContext";
 
 export default function SuppliersPage() {
+  const { t } = useTranslation();
   const { data: me } = useMe();
   const canManage = !!me?.permissions.includes("suppliers.manage_suppliers");
   const { data: suppliers, isLoading } = useSuppliers();
@@ -14,31 +16,31 @@ export default function SuppliersPage() {
   return (
     <div className="p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-900">Suppliers</h1>
+        <h1 className="text-lg font-semibold text-slate-900">{t("suppliers.title")}</h1>
         {canManage && (
           <button
             onClick={() => setFormOpen((o) => !o)}
             className="rounded bg-slate-900 px-3 py-1.5 text-sm text-white hover:bg-slate-700"
           >
-            + Supplier
+            {t("suppliers.add")}
           </button>
         )}
       </div>
 
       {formOpen && <NewSupplierForm onClose={() => setFormOpen(false)} />}
 
-      {isLoading && <p className="text-sm text-slate-500">Loading…</p>}
+      {isLoading && <p className="text-sm text-slate-500">{t("common.loading")}</p>}
       {suppliers && suppliers.length === 0 && (
-        <p className="text-sm text-slate-500">No suppliers yet.</p>
+        <p className="text-sm text-slate-500">{t("suppliers.none_yet")}</p>
       )}
       {suppliers && suppliers.length > 0 && (
         <table className="w-full max-w-3xl text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
-              <th className="py-1 pr-2">Name</th>
-              <th className="py-1 pr-2">Contact</th>
-              <th className="py-1 pr-2">Email</th>
-              <th className="py-1 pr-2">Phone</th>
+              <th className="py-1 pr-2">{t("common.name")}</th>
+              <th className="py-1 pr-2">{t("suppliers.col_contact")}</th>
+              <th className="py-1 pr-2">{t("common.email")}</th>
+              <th className="py-1 pr-2">{t("common.phone")}</th>
               <th className="py-1"></th>
             </tr>
           </thead>
@@ -60,6 +62,7 @@ function SupplierRow({
   supplier: { id: number; name: string; contact_name: string; email: string; phone: string; is_active: boolean };
   canManage: boolean;
 }) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const update = useUpdateSupplier();
   const [contactName, setContactName] = useState(supplier.contact_name);
@@ -92,9 +95,9 @@ function SupplierRow({
             }
             className="mr-2 text-slate-600 underline hover:text-slate-900"
           >
-            Save
+            {t("common.save")}
           </button>
-          <button onClick={() => setEditing(false)} className="text-slate-400 hover:text-slate-700">Cancel</button>
+          <button onClick={() => setEditing(false)} className="text-slate-400 hover:text-slate-700">{t("common.cancel")}</button>
         </td>
       </tr>
     );
@@ -109,7 +112,7 @@ function SupplierRow({
       <td className="py-1.5 text-right">
         {canManage && (
           <button onClick={() => setEditing(true)} className="text-xs text-slate-600 underline hover:text-slate-900">
-            Edit
+            {t("common.edit")}
           </button>
         )}
       </td>
@@ -118,6 +121,7 @@ function SupplierRow({
 }
 
 function NewSupplierForm({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
   const createSupplier = useCreateSupplier();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -131,25 +135,25 @@ function NewSupplierForm({ onClose }: { onClose: () => void }) {
       { name, email, phone },
       {
         onSuccess: () => onClose(),
-        onError: (err) => setError(err instanceof ApiError ? err.message : "Could not create supplier."),
+        onError: (err) => setError(err instanceof ApiError ? err.message : t("suppliers.error_create")),
       },
     );
   }
 
   return (
     <form onSubmit={handleSubmit} className="mb-4 grid max-w-lg grid-cols-3 gap-2 rounded border border-slate-200 bg-slate-50 p-3">
-      <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Name"
+      <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={t("suppliers.name_placeholder")}
              className="col-span-3 rounded border border-slate-300 px-2 py-1 text-sm" />
-      <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email"
+      <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("suppliers.email_placeholder")}
              className="rounded border border-slate-300 px-2 py-1 text-sm" />
-      <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone"
+      <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t("suppliers.phone_placeholder")}
              className="rounded border border-slate-300 px-2 py-1 text-sm" />
       <div className="flex items-center gap-2">
         <button type="submit" disabled={!name || createSupplier.isPending}
                 className="rounded bg-slate-900 px-3 py-1 text-xs text-white hover:bg-slate-700 disabled:opacity-50">
-          Create
+          {t("common.create")}
         </button>
-        <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-800">Cancel</button>
+        <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-800">{t("common.cancel")}</button>
       </div>
       {error && <p className="col-span-3 text-xs text-red-600">{error}</p>}
     </form>

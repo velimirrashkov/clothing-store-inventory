@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { useCategories, useCreateProduct } from "../../api/catalog";
 import { ApiError } from "../../api/client";
 import type { ProductAdminDetail } from "../../api/types";
+import { useTranslation } from "../../i18n/LanguageContext";
 
 const GENDERS = ["unisex", "men", "women", "kids"] as const;
 
@@ -11,6 +12,7 @@ export function NewProductForm({ onClose, onCreated }: {
   onClose: () => void;
   onCreated: (product: ProductAdminDetail) => void;
 }) {
+  const { t } = useTranslation();
   const { data: categories } = useCategories();
   const createProduct = useCreateProduct();
   const [name, setName] = useState("");
@@ -22,7 +24,7 @@ export function NewProductForm({ onClose, onCreated }: {
     event.preventDefault();
     setError(null);
     if (!categoryId) {
-      setError("Choose a category.");
+      setError(t("products.error_choose_category"));
       return;
     }
     createProduct.mutate(
@@ -32,7 +34,7 @@ export function NewProductForm({ onClose, onCreated }: {
           onCreated(product);
           onClose();
         },
-        onError: (err) => setError(err instanceof ApiError ? err.message : "Could not create product."),
+        onError: (err) => setError(err instanceof ApiError ? err.message : t("products.error_create_product")),
       },
     );
   }
@@ -43,7 +45,7 @@ export function NewProductForm({ onClose, onCreated }: {
         autoFocus
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Product name"
+        placeholder={t("products.product_name_placeholder")}
         className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
       />
       <select
@@ -51,7 +53,7 @@ export function NewProductForm({ onClose, onCreated }: {
         onChange={(e) => setCategoryId(e.target.value)}
         className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
       >
-        <option value="">Choose category…</option>
+        <option value="">{t("products.choose_category")}</option>
         {categories?.map((c) => (
           <option key={c.id} value={c.id}>{c.name}</option>
         ))}
@@ -62,17 +64,17 @@ export function NewProductForm({ onClose, onCreated }: {
         className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
       >
         {GENDERS.map((g) => (
-          <option key={g} value={g}>{g}</option>
+          <option key={g} value={g}>{t(`gender.${g}`)}</option>
         ))}
       </select>
       {error && <p className="text-xs text-red-600">{error}</p>}
       <div className="flex gap-2">
         <button type="submit" disabled={!name || createProduct.isPending}
                 className="rounded bg-slate-900 px-3 py-1 text-xs text-white hover:bg-slate-700 disabled:opacity-50">
-          Create
+          {t("common.create")}
         </button>
         <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-800">
-          Cancel
+          {t("common.cancel")}
         </button>
       </div>
     </form>
