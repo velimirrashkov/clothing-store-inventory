@@ -9,12 +9,15 @@ import {
   useUpdateProduct,
 } from "../../api/catalog";
 import { ApiError } from "../../api/client";
+import { useMe } from "../../api/auth";
 import { useAdjustStock } from "../../api/inventory";
+import { useSetVendorCost, useSuppliers, useVendorCatalog } from "../../api/suppliers";
 import type { StockMovementReason } from "../../api/types";
 import { formatMoney } from "../../lib/money";
 
+// "receipt" (new stock arriving) deliberately isn't offered here — that's what the Deliveries
+// page is for, since it also records the supplier and cost. This stays for corrections only.
 const MANUAL_REASONS: { value: StockMovementReason; label: string }[] = [
-  { value: "receipt", label: "Receipt (new delivery)" },
   { value: "correction", label: "Correction (recount)" },
   { value: "damage", label: "Damage" },
   { value: "loss", label: "Loss / theft" },
@@ -37,7 +40,7 @@ export function ProductDetailPanel({ productId }: { productId: number }) {
 
   const [adjustingVariantId, setAdjustingVariantId] = useState<number | null>(null);
   const [delta, setDelta] = useState("");
-  const [reason, setReason] = useState<StockMovementReason>("receipt");
+  const [reason, setReason] = useState<StockMovementReason>("correction");
   const [adjustError, setAdjustError] = useState<string | null>(null);
 
   if (isLoading || !product) return <div className="p-8 text-slate-500">Loading…</div>;
@@ -239,7 +242,98 @@ export function ProductDetailPanel({ productId }: { productId: number }) {
           <p className="py-4 text-sm text-slate-500">No variants yet — generate a size/colour grid above.</p>
         )}
       </section>
+
+      <VendorCatalogSection productId={productId} />
     </div>
+  );
+}
+
+function VendorCatalogSection({ productId }: { productId: number }) {
+  const { data: me } = useMe();
+  const canManage = !!me?.permissions.includes("suppliers.manage_suppliers");
+  const { data: links, isLoading } = useVendorCatalog(productId, canManage);
+  const setCost = useSetVendorCost(productId);
+  const [supplierId, setSupplierId] = useState("");
+  const [costInput, setCostInput] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  if (!canManage) return null;
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    setError(null);
+    const cost = Math.round(parseFloat(costInput) * 100);
+    if (!supplierId || Number.isNaN(cost)) {
+      setError("Choose a supplier and enter a valid cost.");
+      return;
+    }
+    setCost.mutate(
+      { supplier_id: Number(supplierId), cost_price: cost },
+      {
+        onSuccess: () => { setSupplierId(""); setCostInput(""); },
+        onError: (err) => setError(err instanceof ApiError ? err.message : "Could not save cost."),
+      },
+    );
+  }
+
+  return (
+    <section>
+      <h3 className="mb-2 text-sm font-semibold text-slate-900">Vendor catalog</h3>
+      <p className="mb-2 text-xs text-slate-500">
+        Quoted costs from suppliers who carry this product — manager-only, since this is margin data.
+      </p>
+      {isLoading && <p className="text-sm text-slate-500">Loading…</p>}
+      {links && links.length > 0 && (
+        <table className="mb-3 w-full max-w-md text-sm">
+          <tbody>
+            {links.map((link) => (
+              <tr key={link.id} className="border-b border-slate-100">
+                <td className="py-1.5 pr-2">{link.supplier_name}</td>
+                <td className="py-1.5 text-right">{formatMoney(link.cost_price, link.currency)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <VendorCatalogForm supplierId={supplierId} setSupplierId={setSupplierId}
+                         costInput={costInput} setCostInput={setCostInput}
+                         onSubmit={submit} pending={setCost.isPending} error={error} />
+    </section>
+  );
+}
+
+function VendorCatalogForm({ supplierId, setSupplierId, costInput, setCostInput, onSubmit, pending, error }: {
+  supplierId: string;
+  setSupplierId: (v: string) => void;
+  costInput: string;
+  setCostInput: (v: string) => void;
+  onSubmit: (e: FormEvent) => void;
+  pending: boolean;
+  error: string | null;
+}) {
+  const { data: suppliers } = useSuppliers();
+
+  return (
+    <form onSubmit={onSubmit} className="flex items-end gap-2">
+      <label className="text-xs text-slate-600">
+        Supplier
+        <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}
+                className="mt-1 block rounded border border-slate-300 px-2 py-1 text-sm">
+          <option value="">Choose…</option>
+          {suppliers?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+      </label>
+      <label className="text-xs text-slate-600">
+        Cost
+        <input value={costInput} onChange={(e) => setCostInput(e.target.value)} placeholder="0.00"
+               className="mt-1 block w-24 rounded border border-slate-300 px-2 py-1 text-sm" />
+      </label>
+      <button type="submit" disabled={pending}
+              className="rounded bg-slate-900 px-3 py-1 text-xs text-white hover:bg-slate-700 disabled:opacity-50">
+        Save cost
+      </button>
+      {error && <span className="text-xs text-red-600">{error}</span>}
+    </form>
   );
 }
 

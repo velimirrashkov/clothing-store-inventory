@@ -15,6 +15,7 @@ ROLE_PERMISSIONS = {
         "orders.fulfil_order",
         "orders.create_pos_order",
         "orders.view_any_order",
+        "suppliers.receive_delivery",
     ],
     "manager": [
         "pricing.change_discount",
@@ -22,6 +23,7 @@ ROLE_PERMISSIONS = {
         "catalog.add_product",
         "orders.refund_order",
         "orders.view_reports",  # co-located on orders.Order (see apps/orders/models.py Meta.permissions)
+        "suppliers.manage_suppliers",
     ],
     "admin": [
         "accounts.manage_users",

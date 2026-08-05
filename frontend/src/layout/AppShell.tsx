@@ -6,6 +6,8 @@ const NAV_ITEMS = [
   { to: "/app/products", label: "Products", perm: "catalog.view_product" },
   { to: "/app/inventory", label: "Inventory", perm: "inventory.adjust_stock" },
   { to: "/app/stocktake", label: "Stocktake", perm: "inventory.run_count" },
+  { to: "/app/deliveries", label: "Deliveries", perm: "suppliers.receive_delivery" },
+  { to: "/app/suppliers", label: "Suppliers", perm: "suppliers.receive_delivery" },
   { to: "/app/sell", label: "Sell", perm: "orders.create_pos_order" },
 ];
 

@@ -205,3 +205,68 @@ export interface Paginated<T> {
   previous: string | null;
   results: T[];
 }
+
+// --- suppliers ------------------------------------------------------------------------------
+
+export interface Supplier {
+  id: number;
+  name: string;
+  contact_name: string;
+  email: string;
+  phone: string;
+  notes: string;
+  is_active: boolean;
+}
+
+export interface SupplierWriteInput {
+  name: string;
+  contact_name?: string;
+  email?: string;
+  phone?: string;
+  notes?: string;
+  is_active?: boolean;
+}
+
+export interface ProductSupplierLink {
+  id: number;
+  product: number;
+  supplier: number;
+  supplier_name: string;
+  cost_price: number;
+  currency: string;
+}
+
+export interface DeliveryLineInput {
+  variant_id: number;
+  quantity: number;
+  unit_cost: number;
+}
+
+export interface DeliveryLine {
+  id: number;
+  variant: number;
+  sku: string;
+  quantity: number;
+  unit_cost: number;
+  line_total: number;
+}
+
+export interface Delivery {
+  id: number;
+  supplier: number;
+  supplier_name: string;
+  location: number;
+  reference: string;
+  note: string;
+  currency: string;
+  received_by: number;
+  created_at: string;
+  lines: DeliveryLine[];
+}
+
+export interface DeliveryCreateInput {
+  supplier_id: number;
+  reference?: string;
+  note?: string;
+  lines: DeliveryLineInput[];
+}

@@ -3,10 +3,12 @@ import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-d
 import LoginPage from "./auth/LoginPage";
 import { RequireAuth, RequirePermission } from "./auth/RequireAuth";
 import AppShell from "./layout/AppShell";
+import DeliveriesPage from "./pages/deliveries/DeliveriesPage";
 import InventoryPage from "./pages/inventory/InventoryPage";
 import ProductsPage from "./pages/products/ProductsPage";
 import SellPage from "./pages/sell/SellPage";
 import StocktakePage from "./pages/stocktake/StocktakePage";
+import SuppliersPage from "./pages/suppliers/SuppliersPage";
 
 // One React app, two route trees (see architecture-spec.md §3) — `/app/*` is the back-office,
 // lazy-loadable as its own chunk later. There's no storefront tree yet (Phase 2), so `/` just
@@ -48,6 +50,22 @@ export default function App() {
             element={
               <RequirePermission perm="orders.create_pos_order">
                 <SellPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="suppliers"
+            element={
+              <RequirePermission perm="suppliers.receive_delivery">
+                <SuppliersPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="deliveries"
+            element={
+              <RequirePermission perm="suppliers.receive_delivery">
+                <DeliveriesPage />
               </RequirePermission>
             }
           />
