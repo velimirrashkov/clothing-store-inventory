@@ -56,3 +56,12 @@ class StockCountDetailSerializer(StockCountSerializer):
 
     class Meta(StockCountSerializer.Meta):
         fields = StockCountSerializer.Meta.fields + ["lines"]
+
+
+class CountLineInputSerializer(serializers.Serializer):
+    variant_id = serializers.IntegerField()
+    counted = serializers.IntegerField(min_value=0)
+
+
+class BulkCountLineSubmitSerializer(serializers.Serializer):
+    lines = CountLineInputSerializer(many=True, allow_empty=False)

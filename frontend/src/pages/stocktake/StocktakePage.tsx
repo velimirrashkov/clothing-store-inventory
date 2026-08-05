@@ -1,6 +1,14 @@
 import { useState } from "react";
 
-import { useCloseCount, useOpenCount, useStockCount, useStockCounts, useSubmitCountLine } from "../../api/inventory";
+import {
+  useCloseCount,
+  useOpenCount,
+  useReopenCount,
+  useStockCount,
+  useStockCounts,
+  useSubmitCountLine,
+  useSubmitCountLinesBulk,
+} from "../../api/inventory";
 import { ApiError } from "../../api/client";
 
 export default function StocktakePage() {
@@ -71,13 +79,35 @@ export default function StocktakePage() {
 function CountDetail({ countId }: { countId: number }) {
   const { data: count, isLoading } = useStockCount(countId);
   const submitLine = useSubmitCountLine(countId);
+  const submitBulk = useSubmitCountLinesBulk(countId);
   const closeCount = useCloseCount();
+  const reopenCount = useReopenCount();
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [error, setError] = useState<string | null>(null);
 
   if (isLoading || !count) return <div className="p-8 text-slate-500">Loading…</div>;
 
   const uncountedRemaining = count.lines.filter((l) => l.counted === null).length;
+
+  // Every line with a valid draft that differs from what's already saved — "Submit all" only
+  // sends what actually changed, so re-clicking after a partial save is always safe.
+  const pendingChanges = count.lines
+    .map((line) => {
+      const draft = drafts[line.id];
+      if (draft === undefined || draft === "") return null;
+      const counted = parseInt(draft, 10);
+      if (Number.isNaN(counted) || counted < 0 || counted === line.counted) return null;
+      return { variant_id: line.variant, counted };
+    })
+    .filter((x): x is { variant_id: number; counted: number } => x !== null);
+
+  function submitAll() {
+    setError(null);
+    submitBulk.mutate(pendingChanges, {
+      onSuccess: () => setDrafts({}),
+      onError: (err) => setError(err instanceof ApiError ? err.message : "Could not submit changes."),
+    });
+  }
 
   return (
     <div className="p-6">
@@ -88,15 +118,36 @@ function CountDetail({ countId }: { countId: number }) {
             {count.status} · {count.lines.length} lines · {uncountedRemaining} not yet counted
           </p>
         </div>
-        {count.status === "open" && (
-          <button
-            onClick={() => closeCount.mutate(count.id)}
-            disabled={closeCount.isPending}
-            className="rounded bg-slate-900 px-3 py-1.5 text-sm text-white hover:bg-slate-700 disabled:opacity-50"
-          >
-            Close count
-          </button>
-        )}
+        <div className="flex gap-2">
+          {count.status === "open" && (
+            <>
+              <button
+                onClick={submitAll}
+                disabled={pendingChanges.length === 0 || submitBulk.isPending}
+                className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+              >
+                {submitBulk.isPending ? "Submitting…" : `Submit all${pendingChanges.length ? ` (${pendingChanges.length})` : ""}`}
+              </button>
+              <button
+                onClick={() => closeCount.mutate(count.id)}
+                disabled={closeCount.isPending}
+                className="rounded bg-slate-900 px-3 py-1.5 text-sm text-white hover:bg-slate-700 disabled:opacity-50"
+              >
+                Close count
+              </button>
+            </>
+          )}
+          {count.status === "closed" && (
+            <button
+              onClick={() => reopenCount.mutate(count.id)}
+              disabled={reopenCount.isPending}
+              className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+              title="Reverses this count's stock adjustments with a compensating entry, then reopens it for correction — nothing in the history is deleted."
+            >
+              {reopenCount.isPending ? "Reopening…" : "Reopen for correction"}
+            </button>
+          )}
+        </div>
       </div>
       {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
 
@@ -140,7 +191,10 @@ function CountDetail({ countId }: { countId: number }) {
                         }
                         submitLine.mutate(
                           { variant_id: line.variant, counted },
-                          { onError: (err) => setError(err instanceof ApiError ? err.message : "Could not submit.") },
+                          {
+                            onSuccess: () => setDrafts((d) => { const next = { ...d }; delete next[line.id]; return next; }),
+                            onError: (err) => setError(err instanceof ApiError ? err.message : "Could not submit."),
+                          },
                         );
                       }}
                       className="text-xs text-slate-600 underline hover:text-slate-900"

@@ -56,9 +56,20 @@ export function useOpenCount() {
 }
 
 export function useSubmitCountLine(countId: number) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: { variant_id: number; counted: number }) =>
       api.post<StockCountLine>(`/admin/inventory/counts/${countId}/lines`, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["stock-count", countId] }),
+  });
+}
+
+export function useSubmitCountLinesBulk(countId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (lines: { variant_id: number; counted: number }[]) =>
+      api.post<StockCountLine[]>(`/admin/inventory/counts/${countId}/lines/bulk`, { lines }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["stock-count", countId] }),
   });
 }
 
@@ -66,8 +77,21 @@ export function useCloseCount() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (countId: number) => api.post<StockCount>(`/admin/inventory/counts/${countId}/close`),
-    onSuccess: () => {
+    onSuccess: (_data, countId) => {
       queryClient.invalidateQueries({ queryKey: ["stock-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["stock-count", countId] });
+      queryClient.invalidateQueries({ queryKey: ["stock-levels"] });
+    },
+  });
+}
+
+export function useReopenCount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (countId: number) => api.post<StockCount>(`/admin/inventory/counts/${countId}/reopen`),
+    onSuccess: (_data, countId) => {
+      queryClient.invalidateQueries({ queryKey: ["stock-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["stock-count", countId] });
       queryClient.invalidateQueries({ queryKey: ["stock-levels"] });
     },
   });

@@ -177,6 +177,22 @@ def submit_count_line(*, count_id: int, variant_id: int, counted: int, actor) ->
 
 
 @transaction.atomic
+def submit_count_lines_bulk(*, count_id: int, actor, lines: list[dict]) -> list[StockCountLine]:
+    """lines: [{"variant_id": int, "counted": int}, ...] — one round trip for a whole sheet of entries."""
+    counted_by_variant = {line["variant_id"]: line["counted"] for line in lines}
+    count_lines = list(
+        StockCountLine.objects.filter(count_id=count_id, variant_id__in=counted_by_variant.keys())
+    )
+    now = timezone.now()
+    for line in count_lines:
+        line.counted = counted_by_variant[line.variant_id]
+        line.counted_by = actor
+        line.counted_at = now
+    StockCountLine.objects.bulk_update(count_lines, ["counted", "counted_by", "counted_at"])
+    return count_lines
+
+
+@transaction.atomic
 def close_count(*, count_id: int, actor) -> StockCount:
     """Generates one count_adjustment movement per discrepancy. Never overwrite levels directly (§5.6)."""
     count = StockCount.objects.select_for_update().get(id=count_id, status="open")
@@ -189,6 +205,32 @@ def close_count(*, count_id: int, actor) -> StockCount:
             )
     count.status = "closed"
     count.closed_at = timezone.now()
+    count.save(update_fields=["status", "closed_at"])
+    return count
+
+
+@transaction.atomic
+def reopen_count(*, count_id: int, actor) -> StockCount:
+    """
+    Reopens a closed count for correction. Never rewrites the movements close_count() already
+    wrote — that would erase audit history (§9 append-only ledger). Instead it reverses each
+    count_adjustment with a compensating `correction` movement, then flips status back to open
+    so the lines can be re-entered and re-closed cleanly.
+
+    Caveat: if other legitimate stock movements happened between the original close and this
+    reopen (e.g. a sale), the reversal won't perfectly restore the original pre-count state —
+    same limitation any real stocktake system has when reopened after the fact.
+    """
+    count = StockCount.objects.select_for_update().get(id=count_id, status="closed")
+    reversing_movements = StockMovement.objects.filter(reason="count_adjustment", reference=str(count.id))
+    for movement in reversing_movements:
+        record_movement(
+            variant_id=movement.variant_id, delta=-movement.delta, reason="correction",
+            reference=f"reopen-{count.id}", actor=actor,
+            note=f"Reopening stocktake #{count.id} for correction", location_id=count.location_id,
+        )
+    count.status = "open"
+    count.closed_at = None
     count.save(update_fields=["status", "closed_at"])
     return count
 

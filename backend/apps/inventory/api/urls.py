@@ -10,6 +10,10 @@ urlpatterns = [
     path("inventory/counts/<int:count_id>", views.StockCountDetailView.as_view(), name="inventory-counts-detail"),
     path("inventory/counts/<int:count_id>/lines", views.StockCountLineSubmitView.as_view(),
          name="inventory-counts-lines"),
+    path("inventory/counts/<int:count_id>/lines/bulk", views.StockCountLineBulkSubmitView.as_view(),
+         name="inventory-counts-lines-bulk"),
     path("inventory/counts/<int:count_id>/close", views.StockCountCloseView.as_view(),
          name="inventory-counts-close"),
+    path("inventory/counts/<int:count_id>/reopen", views.StockCountReopenView.as_view(),
+         name="inventory-counts-reopen"),
 ]

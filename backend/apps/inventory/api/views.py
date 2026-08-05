@@ -13,6 +13,7 @@ from .. import services
 from ..models import StockCount, StockLevel
 from .serializers import (
     BarcodeLookupSerializer,
+    BulkCountLineSubmitSerializer,
     MovementCreateSerializer,
     StockCountDetailSerializer,
     StockCountLineSerializer,
@@ -120,9 +121,34 @@ class StockCountLineSubmitView(APIView):
         return Response(StockCountLineSerializer(line).data)
 
 
+class StockCountLineBulkSubmitView(APIView):
+    """POST /api/v1/admin/inventory/counts/{id}/lines/bulk {lines: [{variant_id, counted}]}"""
+
+    permission_classes = [HasPerm("inventory.run_count")]
+
+    def post(self, request, count_id):
+        serializer = BulkCountLineSubmitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        lines = services.submit_count_lines_bulk(
+            count_id=count_id, actor=request.user, lines=serializer.validated_data["lines"],
+        )
+        return Response(StockCountLineSerializer(lines, many=True).data)
+
+
 class StockCountCloseView(APIView):
     permission_classes = [HasPerm("inventory.run_count")]
 
     def post(self, request, count_id):
         count = services.close_count(count_id=count_id, actor=request.user)
+        return Response(StockCountSerializer(count).data)
+
+
+class StockCountReopenView(APIView):
+    """POST /api/v1/admin/inventory/counts/{id}/reopen — see services.reopen_count for why this
+    reverses with a compensating movement instead of rewriting the closed count's history."""
+
+    permission_classes = [HasPerm("inventory.run_count")]
+
+    def post(self, request, count_id):
+        count = services.reopen_count(count_id=count_id, actor=request.user)
         return Response(StockCountSerializer(count).data)
